@@ -1,0 +1,11 @@
+[
+    "Can you refactor 'add numbers' to just 'add'?",
+    "Can you add a 'subtract' function?",
+    "Can you add a 'subtract' and a 'multiply' function?",
+    "Can you allow the add function to add any amount of numbers?",
+    "Can you implement a multiply function that uses the add function?",
+    "Can you implement a factorial function?",
+    "Can you implement a power function?",
+    "Can you implement a fibonacci function?",
+    "Can you implement a prime number detector?"
+]
