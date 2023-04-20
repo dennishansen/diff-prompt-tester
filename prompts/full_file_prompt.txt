@@ -1,0 +1,19 @@
+# New instructions
+
+# Request
+
+Now, display the entire contents of the files that you want changed to achieve the request received.
+
+## Response message
+
+MESSAGE:Include the same response message
+
+## New file format
+
+PATH:path/to/file1.js
+A line
+Added line
+Even another line
+
+### Notes on the new file format
+Maintain tabs and spaces

@@ -3,3 +3,4 @@ python-Levenshtein
 dotenv
 tqdm
 difflib
+argparse
