@@ -1,5 +1,5 @@
 import json
-from source.main import write_html_results
+from source.test import write_html_results
 
 def run():
     #load the results from the json file

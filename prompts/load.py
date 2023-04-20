@@ -15,15 +15,22 @@ def run():
     with open(input_file, "r") as f:
         diff_prompt = f.read().strip()
 
-    # Create a unique id
-    id = len(diff_prompts)
+    # Continue to ask for a name until a unique name is given
+    while True:
+        name = input("Enter a unique name for the diff prompt: ")
+
+        # Check if the name is unique
+        if not any(prompt["name"] == name for prompt in diff_prompts):
+            break
+
+        print("A diff prompt with that name already exists")
 
     # Append the new diff_prompt to the existing list of diff prompts
-    diff_prompts.append({ "id": id, "diff_prompt": diff_prompt })
+    diff_prompts.append({ "name": name, "prompt": diff_prompt, "parsers": [] })
 
     # Write the updated list of diff prompts to the output file without a trailing comma
     with open(output_file, "w") as f:
         json.dump(diff_prompts, f, ensure_ascii=False, separators=(',', ': '), indent=4)
-        f.write("\n")  # add a newline character for readability
+        f.write("\n")
 
     print("Completed")

@@ -9,15 +9,18 @@ if project_dir not in sys.path:
 
 # Import scripts based on command-line arguments
 def run_script(script_name):
-    if script_name == 'run':
-        from source import main
-        main.run()
+    if script_name == 'test':
+        from source import test
+        test.run()
     elif script_name == 'load_parser':
         from parsers import load
         load.run()
     elif script_name == 'test_parser':
         from parsers import test
         test.run()
+    elif script_name == 'test_json_parser':
+        from parsers import test
+        test.test_json()
     elif script_name == 'print_prompt':
         from scripts import print_prompt
         print_prompt.run()
