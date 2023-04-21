@@ -50,7 +50,7 @@ def test_json():
     with open("prompts/diff_prompts.json", "r") as f:
         prompts = json.load(f)
     
-    # Get the prompt
+    # Get the first prompt
     parser_string = prompts[0]["parsers"][0]["parser"]
 
     # Store the functions string in a JSON object
