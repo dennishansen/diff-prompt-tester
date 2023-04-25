@@ -50,4 +50,5 @@ Command: python main.py write_html
 
 ## Contributing
 - Add your parsers and see if you can beat the benchmark. Pull request your benchmark in
-- Would love to improve prompt/parser scoring. For example, it could make to manually cache some 'correct' files.
+- Would love to improve prompt/parser scoring. Currently, subsequent test runs vary a decent amount in terms of scores. For example, it could make to manually cache some 'correct' files.
+- Parelellizing tests!
