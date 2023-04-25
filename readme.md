@@ -58,6 +58,6 @@ This script reads the results from a JSON file, calculates the average distances
 Command: python main.py write_html
 
 
-Contributing
+## Contributing
 - Add your parsers and see if you can beat the benchmark. Pull request your benchmark in
 - Would love to improve prompt/parser scoring. For example, it could make to manually cache some 'correct' files.
