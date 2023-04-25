@@ -1,5 +1,6 @@
+
 # Diff Prompt tester
-This project is intended to drive the development of a prompt/parser that enables GPT to make changes file/code in a compact diff format instead of overwriting entire files. It does this by enables the comparison of how accurately different prompts/parser combinations make file changes as compared to overwriting the entire file. Each prompt/parser is tested against a set of reqeusts and the output files are compared using a leventein distance to a request for the entire. This request for the entire file is requested in the same message thread after the diff is requested. The project consists of several scripts that perform specific tasks, such as running tests, loading and updating parsers, and generating an HTML file with the results.
+This project is intended to drive the development of a prompt/parser that enables GPTs/AutoGPTs/LLMs make changes to files/code in a compact diff format instead of overwriting entire files which severely clog the context window, limited the scale of projects LLMs can work on. This project seeks to acheive this by testing how similar the resulting files of each diff prompt+parser combination is to the output of prompts that return the entire file. This takes place by first asking GPT for code changes using the diff format, and then in the same thread, asking for the complete files. The resulting files's similarity is then compared using the Levenshtein distance. The project also consists of several scripts that perform specific tasks, such as running tests, loading and updating parsers, and generating an HTML file with the results.
 
 ## Installation
 Clone the repository.
@@ -18,7 +19,7 @@ Replace <script_name> with the name of the script you want to run. Below is a li
 ## Scripts
 
 ### test
-This script tests each prompt/parser combinations defined in the `prompts/diff_prompts` file against a series of requests defined in the `requests/requests.json` file. It calculates the accuracy of each parser/prompt combination by comparing the output with the correct response, records the results to the `results/*` directory as a JSON file and an HTML report. Tests that have already run are skipped and tests that encounter errors are written to `results/errors.txt`.
+This script tests each prompt/parser combinations defined in the `prompts/diff_prompts` file against a series of requests defined in the `requests/requests.json` file on how accurately it can make changes to the files in the `test-files` directory. It calculates the accuracy of each parser/prompt combination by comparing the resulting files with 'correct' response, recording the results to the `results/*` directory as a JSON file and an HTML report. Tests that have already run are skipped and tests that encounter errors are written to `results/errors.txt`.
 
 Command: python main.py test
 
