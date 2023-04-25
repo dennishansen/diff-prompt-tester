@@ -18,7 +18,7 @@ Replace <script_name> with the name of the script you want to run. Below is a li
 ## Scripts
 
 ### test
-This script tests each prompt/parser combinations defined in the `prompts/diff_prompts` file against a series of requests defined in the `requests/requests.json` file. It calculates the accuracy of each parser/prompt combination by comparing the output with the correct response, records the results to the `results/` directory as a JSON file and an HTML report. An errors.txt file is generated in the results folder to aid debugging.
+This script tests each prompt/parser combinations defined in the `prompts/diff_prompts` file against a series of requests defined in the `requests/requests.json` file. It calculates the accuracy of each parser/prompt combination by comparing the output with the correct response, records the results to the `results/*` directory as a JSON file and an HTML report. Tests that have already run are skipped and tests that encounter errors are written to `results/errors.txt`.
 
 Command: python main.py test
 
@@ -28,7 +28,7 @@ This script loads a new prompt from the `prompts/diff_prompts.txt` into the `pro
 Command: python main.py load_prompt
 
 ### load_parser
-This script loads the `parsers/parser.py` file into the "parsers/diff_prompts.json" file to queue for tests.
+This script loads the `parsers/parser.py` file into the `parsers/diff_prompts.json` file to queue for tests.
 
 Command: python main.py load_parser
 
