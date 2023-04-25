@@ -21,12 +21,9 @@ def run_script(script_name):
     elif script_name == 'test_json_parser':
         from parsers import test
         test.test_json()
-    elif script_name == 'print_prompt':
-        from scripts import print_prompt
-        print_prompt.run()
-    elif script_name == 'print_files':
-        from scripts import print_files
-        print_files.run()
+    elif script_name == 'print_request_prompt':
+        from scripts import print_request_prompt
+        print_request_prompt.run()
     elif script_name == 'load_prompt':
         from prompts import load
         load.run()

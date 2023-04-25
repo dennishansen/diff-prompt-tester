@@ -22,38 +22,28 @@ This script tests each prompt/parser combinations defined in the `prompts/diff_p
 
 Command: python main.py test
 
+### load_prompt
+This script loads a new prompt from the `prompts/diff_prompts.txt` into the `prompts/diff_prompts.json` file to queue for testing. This must be done before loading a related parser.
+
+Command: python main.py load_prompt
+
 ### load_parser
-This script updates a specific parser in the "parsers/diff_prompts.json" file.
+This script loads the `parsers/parser.py` file into the "parsers/diff_prompts.json" file to queue for tests.
 
 Command: python main.py load_parser
 
 ### test_parser
-This script runs tests on a specific parser and prints the results.
+This script runs test the `parsers/parser.py` test against the `parsers/example_response.txt` for quick debugging.
 
 Command: python main.py test_parser
 
-### test_json_parser
-This script tests the JSON functionality of a specific parser and prints the results.
-
-Command: python main.py test_json_parser
-
-### print_prompt
-This script prints the prompt associated with a specific parser.
+### print_request_prompt
+This script prints the request prompt that is sent to GPT to generate diff changes for. This is helpful to get a prompt to throw in the OpenAI playground for quick debugging
 
 Command: python main.py print_prompt
 
-### print_files
-This script prints the test files' contents.
-
-Command: python main.py print_files
-
-### load_prompt
-This script loads a new prompt into the "prompts/diff_prompts.json" file.
-
-Command: python main.py load_prompt
-
 ### write_html
-This script reads the results from a JSON file, calculates the average distances for each prompt-parser pair, creates a bar chart, and writes an HTML file with the results.
+This script reads the `results/results.json` file and re-writes the HTML results. This makes testing new HTML format quick.
 
 Command: python main.py write_html
 
