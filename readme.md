@@ -1,4 +1,4 @@
-# Prompt tester
+# Diff Prompt tester
 This project is intended to drive the development of a prompt/parser that enables GPT to make changes file/code in a compact diff format instead of overwriting entire files. It does this by enables the comparison of how accurately different prompts/parser combinations make file changes as compared to overwriting the entire file. Each prompt/parser is tested against a set of reqeusts and the output files are compared using a leventein distance to a request for the entire. This request for the entire file is requested in the same message thread after the diff is requested. The project consists of several scripts that perform specific tasks, such as running tests, loading and updating parsers, and generating an HTML file with the results.
 
 ## Installation
@@ -17,42 +17,42 @@ Replace <script_name> with the name of the script you want to run. Below is a li
 
 ## Scripts
 
-###test
+### test
 This script tests each prompt/parser combinations defined in the `prompts/diff_prompts` file against a series of requests defined in the `requests/requests.json` file. It calculates the accuracy of each parser/prompt combination by comparing the output with the correct response, records the results to the `results/` directory as a JSON file and an HTML report. An errors.txt file is generated in the results folder to aid debugging.
 
 Command: python main.py test
 
-###load_parser
+### load_parser
 This script updates a specific parser in the "parsers/diff_prompts.json" file.
 
 Command: python main.py load_parser
 
-###test_parser
+### test_parser
 This script runs tests on a specific parser and prints the results.
 
 Command: python main.py test_parser
 
-###test_json_parser
+### test_json_parser
 This script tests the JSON functionality of a specific parser and prints the results.
 
 Command: python main.py test_json_parser
 
-###print_prompt
+### print_prompt
 This script prints the prompt associated with a specific parser.
 
 Command: python main.py print_prompt
 
-###print_files
+### print_files
 This script prints the test files' contents.
 
 Command: python main.py print_files
 
-###load_prompt
+### load_prompt
 This script loads a new prompt into the "prompts/diff_prompts.json" file.
 
 Command: python main.py load_prompt
 
-###write_html
+### write_html
 This script reads the results from a JSON file, calculates the average distances for each prompt-parser pair, creates a bar chart, and writes an HTML file with the results.
 
 Command: python main.py write_html
