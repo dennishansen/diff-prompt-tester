@@ -18,10 +18,12 @@ def get_changes(response_string):
                     current_hunk = {}
                 changes.append(current_file)
             current_file = {"filePath": line.split(":")[1].strip(), "hunks": []}
-        elif line.startswith("HUNK_START"):
+        elif line.startswith("HUNK"):
             if current_hunk:
                 current_file["hunks"].append(current_hunk)
-            current_hunk = {"hunkStart": int(line.split(":")[1]), "lines": []}
+            range_string = line.split(':')[1]
+            hunk_start, hunk_end = map(int, range_string.split('-'))
+            current_hunk = {"hunk_start": hunk_start, "hunk_end": hunk_end, "lines": []}
         elif line.startswith("-"):
             if current_hunk:
                 current_hunk["lines"].append({"type": "delete", "content": line[1:]})
@@ -41,29 +43,32 @@ def get_changes(response_string):
 
 def apply_diff(file_contents, changes):
     new_file_contents = []
-    for file in file_contents:
+    file_contents_to_change = [f for f in file_contents if f["filePath"] in [c["filePath"] for c in changes]]
+    for file in file_contents_to_change:
         file_path = file["filePath"]
         file_content = file["content"]
         file_changes = next(c for c in changes if c["filePath"] == file_path)
         original_lines = file_content.split("\n")
-        new_lines = []
         original_line_index = 0
+        new_lines = []
 
         for hunk in file_changes["hunks"]:
+            hunk_start = hunk["hunk_start"]
+            hunk_end = hunk["hunk_end"]
+
             # Add unchanged lines before the current hunk
-            while original_line_index < hunk["hunkStart"] - 1:
+            while original_line_index < original_line_index + hunk_start - 1:
                 new_lines.append(original_lines[original_line_index])
-                original_line_index += 1
 
             for line in hunk["lines"]:
-                if line["type"] == "delete":
-                    original_line_index += 1
-                elif line["type"] == "add":
+                if line["type"] == "add":
                     new_lines.append(line["content"])
                 else:
                     if original_line_index < len(original_lines):
-                        new_lines.append(original_lines[original_line_index])
-                    original_line_index += 1
+                        new_lines.append(line["content"])
+
+            # Update index
+            original_line_index = original_line_index + hunk_end
 
         # Add remaining unchanged lines after the last hunk
         while original_line_index < len(original_lines):

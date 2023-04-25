@@ -1,0 +1,23 @@
+Error: 
+Prompt: end_hunk_line
+Parser: end_hunk_line
+Request: Can you make the add function return a formatted string?
+Diff Response:
+
+MESSAGE: I have modified the add_numbers function to return a formatted string.
+EDIT_FILE:test_files/utils.py
+HUNK:1-2
+def add_numbers(num1, num2):
+-    return num1 + num2
++    return f"The sum of {num1} and {num2} is {num1 + num2}."
+
+
+Error: 
+Prompt: end_hunk_line
+Parser: end_hunk_line
+Request: Can you have it add two different numbers?
+Diff Response:
+
+MESSAGE: The code you provided already adds two different numbers. Is there anything else you'd like me to change?
+
+

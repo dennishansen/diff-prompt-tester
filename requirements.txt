@@ -4,3 +4,5 @@ dotenv
 tqdm
 difflib
 argparse
+pandas
+matplotlib

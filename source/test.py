@@ -6,6 +6,8 @@ import Levenshtein
 from tqdm import tqdm
 from dotenv import load_dotenv
 from source.debug import debug
+from source.deterministic_hash import deterministic_hash
+from results import write_html_results
 
 load_dotenv()
 
@@ -26,7 +28,6 @@ with open("requests/requests.json", "r") as f:
     requests = json.load(f)
 
 def call_gpt_agent(messages):
-    # print(json.dumps(messages, indent=4))
     try: 
         response = openai.ChatCompletion.create(
             model="gpt-4-0314",
@@ -34,6 +35,7 @@ def call_gpt_agent(messages):
             temperature=0,
             max_tokens=2048,
         )
+
         return response.choices[0]['message']['content'].strip()
     except openai.OpenAIError as error:
         print(f"An error occurred while calling the OpenAI API: {error}")
@@ -95,23 +97,48 @@ def get_diffed_file_string(file_contents):
 def run():
     results = []
     tests = []
+    tests_with_error = []
 
     # Flatten perumtations of prompts, requests, and parsers into experiements
     for prompt in diff_prompts:
         for parser in prompt["parsers"]:
             for request in requests:
                 test = {
+                    # Create id that is a hash of the prompt, parser, and request
+                     "id": deterministic_hash(f"{prompt['prompt']}{parser['parser']}{request}"),
                     "prompt": prompt,
                     "parser": parser,
                     "request": request
                 }
                 tests.append(test)
+    
+    # Load existing test results
+    with open("results/results.json", "r") as f:
+        results = json.load(f)
+
+    # Add results for tests that have already been run
+    tests_to_skip = [test for test in tests if test["id"] in [result["id"] for result in results]]
+    for test in tests_to_skip:
+        cached_result = [result for result in results if result["id"] == test["id"]][0]
+        results.append(cached_result)
+
+    # Queue up everything else to run
+    tests_to_run = [test for test in tests if test["id"] not in [result["id"] for result in results]]
+
+    # Print whats being skipped and whats being run
+    print(f"Skipping {len(tests_to_skip)} tests")
+    print(f"Running {len(tests_to_run)} tests")
+
+    # Get the file contents
+    file_contents = get_file_contents(files)
+    debug(f"File Contents:\n{json.dumps(file_contents, indent=4)}")
 
     # Run tests
-    for test in tqdm(tests, desc="Tests", unit="test"):
+    for test in tqdm(tests_to_run, desc="Tests", unit="test"):
         prompt = test["prompt"]
         parser = test["parser"]
         request = test["request"]
+        id = test["id"]
         
         # Get the prompts
         user_prompt = get_user_prompt(request)
@@ -123,9 +150,6 @@ def run():
         diff_response_raw = call_gpt_agent(messages)
         debug(f"Diff Response:\n{diff_response_raw}")
 
-        file_contents = get_file_contents(files)
-        debug(f"File Contents:\n{json.dumps(file_contents, indent=4)}")
-
         # Get the functions from the parser
         parser_string = parser["parser"]
 
@@ -135,14 +159,23 @@ def run():
         # Convert the JSON object back into a string
         functions_string_from_json = json.loads(json.dumps(parser_json))["functions"]
 
-        # Load the functions into the namespace
-        exec(functions_string_from_json, globals())
+        try:
+            # Load the functions into the namespace
+            exec(functions_string_from_json, globals())
 
+            # Parse the diff response
+            diffed_files, diff_message, diff_raw = parse(diff_response_raw, file_contents)
+            debug(f"Diffed File Contents:\n{json.dumps(diffed_files, indent=4)}")
+        except Exception as e:
+            tests_with_error.append({
+                "error": str(e),
+                "prompt_name": prompt["name"],
+                "parser_name": parser["name"],
+                "request": request,
+                "diff_response": diff_response_raw,
+            })
+            continue
 
-        # Parse the diff response
-        diffed_files, diff_message, diff_raw = parse(diff_response_raw, file_contents)
-        debug(f"Diffed File Contents:\n{json.dumps(diffed_files, indent=4)}")
-        
         diffed_files_string = get_diffed_file_string(diffed_files)
         debug(f"Changed File Contents String:\n{diffed_files_string}")
 
@@ -169,6 +202,7 @@ def run():
 
         # Record the results
         result = {
+            "id": id,
             "diff_prompt_name": prompt["name"],
             "parser_name": parser["name"],
             "request": request,
@@ -178,35 +212,33 @@ def run():
             "diff_response_raw": diff_raw,
             "diff_message": diff_message,
             "diffed_files": diffed_files_string,
-            "diff_with_corrected": diff_with_corrected
+            "diff_with_corrected": diff_with_corrected if diff_with_corrected else "None"
         }
 
         results.append(result)
-
         write_json_results(results)
-        write_html_results(results)
+
+    write_html_results.run()
+
+    # Print tests that ran
+    if len(tests_to_run) - len(tests_with_error) > 0:
+        print(f"Successfully ran {len(results)} tests")
+    else:
+        print("No tests were run")
+    
+    # Print tests with errors
+    if len(tests_with_error) > 0:
+        print(f"{len(tests_with_error)} tests failed to run")
+        # Write the tests with errors to a file
+        with open("results/errors.txt", "w") as f:
+            for test_with_error in tests_with_error:
+                error_string = f"Error: {test_with_error['error']}\nPrompt: {test_with_error['prompt_name']}\nParser: {test_with_error['parser_name']}\nRequest: {test_with_error['request']}\nDiff Response:\n\n{test_with_error['diff_response']}\n\n\n"
+                f.write(error_string)
+    else:
+        print("No tests had errors")
+
 
 def write_json_results(results):
     with open("results/results.json", "w") as f:
         json.dump(results, f, indent=4)
 
-def write_html_results(results):
-    with open('results/results.html', "w") as f:
-        f.write("<html><head><style>table {border-collapse: collapse;} .header {position: sticky; top:0px;  } th, td {border: 1px solid black; padding: 8px;} th {background-color: #f2f2f2;} td > pre {max-width: 400px; overflow-wrap: break-word; white-space: pre-wrap;} .message {max-width: 150px}</style></head><body>")
-        f.write("<table><tr class=\"header\"><th>Diff Prompt</th><th>Parser</th><th>Distance</th><th>Request</th><th>Response Message</th><th>Diff Response</th><th>Diffed Files</th><th>Correct Files</th><th>Diff with Correct</th></tr>")
-        
-        for result in results:
-            f.write("<tr>")
-            f.write(f"<td>{result['diff_prompt_name']}</td>")
-            f.write(f"<td>{result['parser_name']}</td>")
-            f.write(f"<td>{result['distance']}</td>")
-            f.write(f"<td class=\"message\">{result['request']}</td>")
-            f.write(f"<td class=\"message\">{result['diff_message']}</td>")
-            f.write(f"<td><pre>{result['diff_response_raw']}</pre></td>")
-            f.write(f"<td><pre>{result['diffed_files']}</pre></td>")
-            f.write(f"<td><pre>{result['correct_files']}</pre></td>")
-            f.write(f"<td><pre>{result['diff_with_corrected']}</pre></td>")
-            f.write("</tr>")
-        
-        f.write("</table>")
-        f.write("</body></html>")

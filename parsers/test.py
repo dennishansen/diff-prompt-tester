@@ -8,32 +8,11 @@ test_file_path = "test_files"
 files = os.listdir(test_file_path)
 file_contents = get_file_contents(files)
 
-diff_response_raw = """MESSAGE:I have implemented a multiply function using the add function in the utils.py file and updated the main.py file to use the new function.	
-EDIT_FILE:test_files/utils.py
-HUNK_START:1
-def add_numbers(num1, num2):
-    return num1 + num2
-+def multiply_numbers(num1, num2):
-+    result = 0
-+    for _ in range(num2):
-+        result = add_numbers(result, num1)
-+    return result
-
-EDIT_FILE:test_files/main.py
-HUNK_START:1
-from utils import add_numbers
-+from utils import multiply_numbers
-+
-num1 = 5
-num2 = 10
--result = add_numbers(num1, num2)
-+result = multiply_numbers(num1, num2)
--print(f"The sum of \{num1\} and \{num2\} is \{result\}.")
-+print(f"The product of \{num1\} and \{num2\} is \{result\}.")"""
+# Load example_response from txt file
+with open("parsers/example_response.txt", "r") as f:
+    diff_response_raw = f.read()
 
 def run():
-
-    print(file_contents)
 
     diffed_files, diff_message, diff_raw = parser.parse(diff_response_raw, file_contents)
 

@@ -29,24 +29,42 @@ def run():
     # Get the diff prompt object to update
     prompt = next(prompt for prompt in prompts if prompt["name"] == diff_prompt_name)
 
-        # Continue to ask for a parser name until a unique name is given
-    while True:
-        name = input("Enter a unique name for the diff prompt: ")
+    # Continue to ask for a parser name until a unique name is given
+    name = input("Enter name prompt name: ")
 
-        # Check if the name is unique
-        if not any(parser["name"] == name for parser in prompt['parsers']):
-            break
+    # Check if the name exists
+    name_exists = any(parser["name"] == name for parser in prompt["parsers"])
 
-        print("A diff prompt with that name already exists")
+    # If the name exists, ask the user if they want to overwrite it
+    if name_exists:
+        overwrite = input("A parser with that name already exists. Overwrite? (y/n): ")
 
-    # Define a new parser object
-    new_parser = {
-        "id": str(len(prompt["parsers"])),
-        "parser": parser
-    }
+        # If the user doesn't want to overwrite, exit the program
+        if overwrite != "y":
+            print("Exiting")
+            return
+        
+        # Overwrite the existing parser object
+        updated_parser = {
+            "name": str(name),
+            "parser": parser
+        }
 
-    # Append the new parser object to the "parsers" list of the first prompt
-    prompt["parsers"].append(new_parser)
+        # Get the index of the existing parser object
+        index = next(index for (index, d) in enumerate(prompt["parsers"]) if d["name"] == name)
+
+        # Update the existing parser object
+        prompt["parsers"][index] = updated_parser
+
+    else:
+        # Define a new parser object
+        new_parser = {
+            "name": str(name),
+            "parser": parser
+        }
+
+        # Append the new parser object to the "parsers" list of the first prompt
+        prompt["parsers"].append(new_parser)
 
     # Convert the updated Python object back to JSON format
     updated_diff_prompts = json.dumps(prompts, indent=4)

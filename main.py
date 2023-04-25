@@ -30,9 +30,10 @@ def run_script(script_name):
     elif script_name == 'load_prompt':
         from prompts import load
         load.run()
-    elif script_name == 'load_html':
-        from results import load_html
-        load_html.run()
+    elif script_name == 'write_html':
+        from results import write_html_results
+        write_html_results.run()
+        print("Completed")
     else:
         print(f"Unknown script: {script_name}")
         sys.exit(1)

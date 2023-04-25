@@ -1,0 +1,6 @@
+MESSAGE: I have modified the add_numbers function to return a formatted string.
+EDIT_FILE:test_files/utils.py
+HUNK:1-2
+def add_numbers(num1, num2):
+-    return num1 + num2
++    return f"The sum of {num1} and {num2} is {num1 + num2}."
