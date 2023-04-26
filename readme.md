@@ -8,6 +8,7 @@ Install the required packages using the following command:
 ```
 pip install -r requirements.txt
 ```
+Create a `.env` file and insert `OPENAI_API_KEY=<your_open_ai_key>`
 
 ## Usage
 To run a specific script, use the following command:
