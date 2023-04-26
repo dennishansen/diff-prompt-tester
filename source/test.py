@@ -3,6 +3,7 @@ import difflib
 import os
 import json
 import Levenshtein
+import concurrent.futures
 from tqdm import tqdm
 from dotenv import load_dotenv
 from source.debug import debug
@@ -114,67 +115,98 @@ def run():
     
     # Load existing test results
     with open("results/results.json", "r") as f:
-        results = json.load(f)
+        old_results = json.load(f)
 
-    # Add results for tests that have already been run
-    tests_to_skip = [test for test in tests if test["id"] in [result["id"] for result in results]]
+    # Add results for tests that have already been run in the old results
+    test_ids_ran = [result["id"] for result in old_results]
+    tests_to_skip = [test for test in tests if test["id"] in test_ids_ran]
     for test in tests_to_skip:
-        cached_result = [result for result in results if result["id"] == test["id"]][0]
-        results.append(cached_result)
+        results.append([result for result in old_results if result["id"] == test["id"]][0])
 
     # Queue up everything else to run
-    tests_to_run = [test for test in tests if test["id"] not in [result["id"] for result in results]]
+    tests_to_run = [test for test in tests if test["id"] not in test_ids_ran]
 
     # Print whats being skipped and whats being run
     print(f"Skipping {len(tests_to_skip)} tests")
     print(f"Running {len(tests_to_run)} tests")
 
+    # Overwrite the results file with the new results based on the new test set
+    write_json_results(results)
+
     # Get the file contents
     file_contents = get_file_contents(files)
     debug(f"File Contents:\n{json.dumps(file_contents, indent=4)}")
 
+
     # Run tests
-    for test in tqdm(tests_to_run, desc="Tests", unit="test"):
-        prompt = test["prompt"]
-        parser = test["parser"]
-        request = test["request"]
-        id = test["id"]
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Create a function that processes a test with the required arguments
+        process_test_partial = lambda test: process_test(test, file_contents)
         
-        # Get the prompts
-        user_prompt = get_user_prompt(request)
+        # Run tests in parallel
+        for result, error in tqdm(executor.map(process_test_partial, tests_to_run), total=len(tests_to_run), desc="Tests", unit="test"):
+            if result is not None:
+                results.append(result)
+                write_json_results(results)
+            else:
+                tests_with_error.append(error)
 
-        # Set the initial messages
-        messages = [{"role": "system", "content": prompt["prompt"]}, {"role": "user", "content": user_prompt}]
+    write_html_results.run()
 
-        # Get the files from the diff system prompt
-        diff_response_raw = call_gpt_agent(messages)
-        debug(f"Diff Response:\n{diff_response_raw}")
+    # Print tests that ran
+    if len(tests_to_run) - len(tests_with_error) > 0:
+        print(f"Successfully ran {len(results)} tests")
+    else:
+        print("No tests were run")
+    
+    # Print tests with errors
+    if len(tests_with_error) > 0:
+        print(f"{len(tests_with_error)} tests failed to run")
+        # Write the tests with errors to a file
+        with open("results/errors.txt", "w") as f:
+            for test_with_error in tests_with_error:
+                error_string = f"Error: {test_with_error['error']}\nPrompt: {test_with_error['prompt_name']}\nParser: {test_with_error['parser_name']}\nRequest: {test_with_error['request']}\nDiff Response:\n\n{test_with_error['diff_response']}\n\n\n"
+                f.write(error_string)
 
-        # Get the functions from the parser
-        parser_string = parser["parser"]
 
-        # Store the functions string in a JSON object
-        parser_json = {"functions": parser_string}
+def write_json_results(results):
+    with open("results/results.json", "w") as f:
+        json.dump(results, f, indent=4)
 
-        # Convert the JSON object back into a string
-        functions_string_from_json = json.loads(json.dumps(parser_json))["functions"]
 
-        try:
-            # Load the functions into the namespace
-            exec(functions_string_from_json, globals())
+def process_test(test, file_contents):
+    prompt = test["prompt"]
+    parser = test["parser"]
+    request = test["request"]
+    id = test["id"]
+    
+    # Get the prompts
+    user_prompt = get_user_prompt(request)
 
-            # Parse the diff response
-            diffed_files, diff_message, diff_raw = parse(diff_response_raw, file_contents)
-            debug(f"Diffed File Contents:\n{json.dumps(diffed_files, indent=4)}")
-        except Exception as e:
-            tests_with_error.append({
-                "error": str(e),
-                "prompt_name": prompt["name"],
-                "parser_name": parser["name"],
-                "request": request,
-                "diff_response": diff_response_raw,
-            })
-            continue
+    # Set the initial messages
+    messages = [{"role": "system", "content": prompt["prompt"]}, {"role": "user", "content": user_prompt}]
+
+    # Get the files from the diff system prompt
+    diff_response_raw = call_gpt_agent(messages)
+    debug(f"Diff Response:\n{diff_response_raw}")
+
+    # Get the functions from the parser
+    parser_string = parser["parser"]
+
+    # Store the functions string in a JSON object
+    parser_json = {"functions": parser_string}
+
+    # Convert the JSON object back into a string
+    functions_string_from_json = json.loads(json.dumps(parser_json))["functions"]
+
+
+    try:
+        # Load the functions into the namespace
+        exec(functions_string_from_json, globals())
+
+        # Parse the diff response
+        diffed_files, diff_message, diff_raw = parse(diff_response_raw, file_contents)
+        debug(f"Diffed File Contents:\n{json.dumps(diffed_files, indent=4)}")
 
         diffed_files_string = get_diffed_file_string(diffed_files)
         debug(f"Changed File Contents String:\n{diffed_files_string}")
@@ -215,30 +247,13 @@ def run():
             "diff_with_corrected": diff_with_corrected if diff_with_corrected else "None"
         }
 
-        results.append(result)
-        write_json_results(results)
-
-    write_html_results.run()
-
-    # Print tests that ran
-    if len(tests_to_run) - len(tests_with_error) > 0:
-        print(f"Successfully ran {len(results)} tests")
-    else:
-        print("No tests were run")
-    
-    # Print tests with errors
-    if len(tests_with_error) > 0:
-        print(f"{len(tests_with_error)} tests failed to run")
-        # Write the tests with errors to a file
-        with open("results/errors.txt", "w") as f:
-            for test_with_error in tests_with_error:
-                error_string = f"Error: {test_with_error['error']}\nPrompt: {test_with_error['prompt_name']}\nParser: {test_with_error['parser_name']}\nRequest: {test_with_error['request']}\nDiff Response:\n\n{test_with_error['diff_response']}\n\n\n"
-                f.write(error_string)
-    else:
-        print("No tests had errors")
-
-
-def write_json_results(results):
-    with open("results/results.json", "w") as f:
-        json.dump(results, f, indent=4)
-
+        return result, None
+    except Exception as e:
+        error = {
+            "error": str(e),
+            "prompt_name": prompt["name"],
+            "parser_name": parser["name"],
+            "request": request,
+            "diff_response": diff_response_raw,
+        }
+        return None, error
